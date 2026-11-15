@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: eliza.py
-# Descripción: clase Eliza, la coordinadora de toda la conversación.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 from archivos import Persistencia
 from frases import FraseClave, GrupoEntrada, GrupoSalida, normalizar
@@ -47,11 +45,17 @@ class Eliza:
         Eficiencia: cuatro llamadas a la red más recorrer los JSON, O(t)
         donde t es el total de frases.
         """
-        self._api = Cliente_API("https://raw.githubusercontent.com/FernandoSapient/BPTSP05_2627-1/main/")
+        url = "https://raw.githubusercontent.com/FernandoSapient/BPTSP05_2627-1/main/"
+        self._api = Cliente_API(url)
         datos = self._api.cargar_todo()
-        if any(dato is None for dato in datos.values()):
-            print("No se pudieron cargar las frases: no hay internet ni copia local.")
-            return False
+
+        # si falta algún JSON y no hay copia local no se puede conversar
+        nombres = ["entrada.json", "salida.json", "personas.json", "lugares.json"]
+        for nombre in nombres:
+            if datos[nombre] is None:
+                print("No se pudieron cargar las frases: no hay internet ni copia local.")
+                return False
+
         self._armar_grupos(datos)
         self._base = BaseConocimiento()
         self._base.agregar(Usuario(self._persistencia))
@@ -66,6 +70,7 @@ class Eliza:
         """
         if not self.iniciar():
             return
+
         while True:
             texto = input("Tú: ")
             if texto.strip() == "":
@@ -79,30 +84,43 @@ class Eliza:
     def procesar(self, texto):
         """Devuelve la respuesta de Eliza para el texto del usuario.
 
-        Primero busca si el texto completo es una frase conocida (esa
-        coincidencia gana siempre); si no, revisa los grupos por
-        prioridad. Devuelve None cuando el grupo detectado es de
-        despedida: en ese caso guarda el archivo e imprime el adiós.
+        Primero se revisan siempre las prioridades 1, 2 y 3 (la 3 detecta
+        personas); después, si se estaba esperando un dato, el texto se
+        toma como respuesta. Luego se busca la frase clave: gana la que sea
+        igual a todo el texto y, si no hay, la prioridad menor. Devuelve
+        None cuando el grupo detectado es de despedida: en ese caso guarda
+        el archivo e imprime el adiós.
 
         Eficiencia: O(g · f · n) con g = 12 grupos, f = frases por grupo
         y n = palabras del texto.
         """
         normalizado = normalizar(texto)
-        self._recopilar(normalizado)
-        self._revisar_personas(normalizado)
+
+        # 1) las prioridades 1, 2 y 3 se revisan siempre; en el paso 3 se
+        #    guarda la relación si se detectó una persona
+        mensaje_especial = self._revisar_prioridades_bajas(normalizado)
+
+        # 2) si Eliza estaba esperando un dato, el texto es la respuesta
+        self._recopilar(normalizado, mensaje_especial)
+
+        # 3) buscar la frase clave que corresponde
         grupo = self._buscar_grupo(normalizado)
-        if grupo is not None:
-            if grupo.es_despedida():
-                self._guardar()
-                print("Eliza: " + self._generador.responder(grupo, self._base))
-                return None
-            respuesta = self._generador.responder(grupo, self._base)
-            if grupo.prioridad() == 3 and self._base.ultima() is not None:
-                if self._base.ultima().nombre() == "":
-                    self._esperando = True
-            return respuesta
-        self._esperando = self._falta_algo()
-        return self._generador.siguiente_pregunta(self._base)
+        if grupo is None:
+            # no coincidió nada: preguntar lo que falte o seguir la charla
+            self._esperando = self._falta_algo()
+            return self._generador.siguiente_pregunta(self._base)
+
+        if grupo.es_despedida():
+            # la prioridad 1 guarda todo y termina el programa
+            self._guardar()
+            print("Eliza: " + self._generador.responder(grupo, self._base))
+            return None
+
+        respuesta = self._generador.responder(grupo, self._base)
+        if grupo.prioridad() == 3 and self._base.ultima() is not None:
+            if self._base.ultima().nombre() == "":
+                self._esperando = True
+        return respuesta
 
     def _buscar_grupo(self, texto):
         """Devuelve el grupo que coincide con el texto, o None.
@@ -121,27 +139,70 @@ class Eliza:
                 return grupo
         return None
 
+    def _revisar_prioridades_bajas(self, texto):
+        """Revisa los grupos de prioridad 1, 2 y 3 y devuelve True si alguno
+        coincidió (despedida, pésame o mención de persona).
+
+        Si coincide la prioridad 3, la relación detectada se guarda como
+        una persona nueva en la base. Estas prioridades se revisan siempre,
+        antes que todas las demás.
+
+        Eficiencia: O(f · n) con f = frases de los tres grupos.
+        """
+        encontro_algo = False
+        for grupo in self._grupos:
+            if grupo.prioridad() > 3:
+                continue
+            coincidencia = grupo.buscar(texto)
+            if coincidencia == "":
+                continue
+            encontro_algo = True
+            # solo la prioridad 3 (Freudiano) crea personas
+            if grupo.prioridad() == 3:
+                self._base.agregar(Persona(relacion=coincidencia))
+        return encontro_algo
+
     def _armar_grupos(self, datos):
         """Crea los grupos de entrada, de salida, de preguntas y las
         frases de reconocimiento a partir de los JSON.
 
         Eficiencia: O(t) donde t es el total de frases.
         """
+        # grupos de entrada: uno por cada prioridad del 1 al 12
         self._grupos = []
         for nombre, info in datos["entrada.json"].items():
-            frases = [FraseClave(frase) for frase in info["Frases clave"]]
-            accion = info.get("Acción", "")
-            self._grupos.append(GrupoEntrada(nombre, info["Prioridad"], frases, accion))
-        self._grupos.sort(key=lambda grupo: grupo.prioridad())
+            frases = []
+            for texto in info["Frases clave"]:
+                frases.append(FraseClave(texto))
+            accion = ""
+            if "Acción" in info:
+                accion = info["Acción"]
+            grupo = GrupoEntrada(nombre, info["Prioridad"], frases, accion)
+            self._grupos.append(grupo)
+
+        # ordenar los grupos: la prioridad 1 queda primero (burbuja)
+        for i in range(len(self._grupos)):
+            for j in range(i + 1, len(self._grupos)):
+                if self._grupos[j].prioridad() < self._grupos[i].prioridad():
+                    temporal = self._grupos[i]
+                    self._grupos[i] = self._grupos[j]
+                    self._grupos[j] = temporal
+
+        # grupos de salida: los mismos 12 más el conversacional (prioridad 0)
         salidas = []
         for nombre, info in datos["salida.json"].items():
-            salidas.append(GrupoSalida(nombre, info["Prioridad"], info["Frases clave"]))
+            grupo = GrupoSalida(nombre, info["Prioridad"], info["Frases clave"])
+            salidas.append(grupo)
+
+        # preguntas que se usan cuando falta información
         preguntas = {
             "nombre usuario": self._grupo_pregunta(datos["personas.json"]["Preguntar usuario"]),
             "origen usuario": self._grupo_pregunta(datos["lugares.json"]["Preguntar usuario"]),
             "origen persona": self._grupo_pregunta(datos["lugares.json"]["Preguntar relación"]),
         }
         self._generador = GeneradorRespuestas(salidas, preguntas)
+
+        # frases para reconocer nombres, lugares y gentilicios
         self._reconocer = {
             "usuario": self._frases_de(datos["personas.json"]["Reconocer usuario"]),
             "relacion": self._frases_de(datos["personas.json"]["Reconocer relación"]),
@@ -161,7 +222,10 @@ class Eliza:
 
         Eficiencia: O(f) con f = frases del grupo.
         """
-        return [FraseClave(frase) for frase in info["Frases clave"]]
+        frases = []
+        for texto in info["Frases clave"]:
+            frases.append(FraseClave(texto))
+        return frases
 
     def _falta_algo(self):
         """Devuelve True si al usuario o a alguna persona le falta
@@ -174,76 +238,55 @@ class Eliza:
                 return True
         return False
 
-    def _recopilar(self, texto):
+    def _recopilar(self, texto, mensaje_especial):
         """Interpreta el texto como respuesta a una pregunta pendiente de
         nombre u origen y guarda el dato si lo reconoce.
 
-        El nombre usa frases de reconocimiento y, si no hay, la primera
-        palabra del texto. El origen solo se guarda con frases de
-        reconocimiento. Si el texto es una despedida, un pésame o una
-        mención de persona, no se interpreta como respuesta.
+        El mensaje_especial viene de _revisar_prioridades_bajas: si es
+        True el texto es una despedida, un pésame o una mención de
+        persona, así que no se toma como respuesta. El nombre usa frases
+        de reconocimiento y, si no hay, la primera palabra del texto. El
+        origen solo se guarda con frases de reconocimiento.
 
         Eficiencia: O(r · n) con r = frases de reconocimiento.
         """
         if not self._esperando:
             return
-        if self._es_mensaje_especial(texto):
+        if mensaje_especial:
             return
+
+        # 1) quién responde: primero el usuario, después la primera
+        #    persona a la que le falte algún dato
         usuario = self._base.personas()[0]
-        if usuario.dato_faltante() == "nombre":
-            nombre = self._buscar_nombre(texto, "usuario")
-            if nombre == "":
+        persona = usuario
+        es_el_usuario = True
+        if usuario.dato_faltante() == "":
+            incompletas = self._base.incompletas()
+            if len(incompletas) == 0:
                 return
-            usuario.poner_nombre(nombre)
-            self._cargar_archivo(usuario)
-            print("Gracias, continua")
-            self._esperando = False
-            return
-        if usuario.dato_faltante() == "origen":
-            origen = self._buscar_origen(texto)
-            if origen == "":
-                return
-            usuario.poner_origen(origen)
-            print("Gracias, continua")
-            self._esperando = False
-            return
-        for persona in self._base.incompletas():
-            if persona.dato_faltante() == "nombre":
-                nombre = self._buscar_nombre(texto, "relacion")
-                if nombre == "":
-                    return
-                persona.poner_nombre(nombre)
+            persona = incompletas[0]
+            es_el_usuario = False
+
+        # 2) conseguir el valor del dato que falta
+        if persona.dato_faltante() == "nombre":
+            if es_el_usuario:
+                valor = self._buscar_nombre(texto, "usuario")
             else:
-                origen = self._buscar_origen(texto)
-                if origen == "":
-                    return
-                persona.poner_origen(origen)
-            print("Gracias, continua")
-            self._esperando = False
+                valor = self._buscar_nombre(texto, "relacion")
+        else:
+            valor = self._buscar_origen(texto)
+        if valor == "":
             return
 
-    def _revisar_personas(self, texto):
-        """Revisa siempre la prioridad 3 y guarda la relación detectada.
-
-        Eficiencia: O(f · n) con f = frases de la prioridad 3.
-        """
-        for grupo in self._grupos:
-            if grupo.prioridad() == 3:
-                relacion = grupo.buscar(texto)
-                if relacion != "":
-                    self._base.agregar(Persona(relacion=relacion))
-                return
-
-    def _es_mensaje_especial(self, texto):
-        """Devuelve True si el texto es despedida, pésame o una mención
-        de persona (prioridades 1, 2 y 3).
-
-        Eficiencia: O(f · n) con f = frases de esos tres grupos.
-        """
-        for grupo in self._grupos:
-            if grupo.prioridad() <= 3 and grupo.buscar(texto) != "":
-                return True
-        return False
+        # 3) guardar el dato, avisar y dejar de esperar respuestas
+        if persona.dato_faltante() == "nombre":
+            persona.poner_nombre(valor)
+            if es_el_usuario:
+                self._cargar_archivo(usuario)
+        else:
+            persona.poner_origen(valor)
+        print("Gracias, continua")
+        self._esperando = False
 
     def _buscar_nombre(self, texto, tipo):
         """Devuelve el nombre reconocido en el texto o la primera palabra.
@@ -253,13 +296,14 @@ class Eliza:
 
         Eficiencia: O(r · n) con r = frases de reconocimiento.
         """
-        for frase in self._reconocer[tipo]:
-            if frase.coincide(texto) != "":
-                return frase.capturar(texto).capitalize()
-        palabras = texto.split()
-        if len(palabras) == 0:
-            return ""
-        return palabras[0].capitalize()
+        nombre = self._buscar_dato(texto, [tipo])
+        if nombre == "":
+            # sin frase de reconocimiento, la primera palabra es el nombre
+            palabras = texto.split()
+            if len(palabras) == 0:
+                return ""
+            nombre = palabras[0]
+        return nombre.capitalize()
 
     def _buscar_origen(self, texto):
         """Devuelve el origen reconocido en el texto o cadena vacía.
@@ -269,10 +313,24 @@ class Eliza:
 
         Eficiencia: O(r · n) con r = frases de reconocimiento.
         """
-        for tipo in ("lugar", "gentilicio"):
+        origen = self._buscar_dato(texto, ["lugar", "gentilicio"])
+        if origen == "":
+            return ""
+        return origen.capitalize()
+
+    def _buscar_dato(self, texto, tipos):
+        """Devuelve la palabra capturada por las frases de reconocimiento,
+        o cadena vacía si ninguna coincide.
+
+        Los tipos dicen qué listas recorrer: "usuario", "relacion",
+        "lugar" o "gentilicio".
+
+        Eficiencia: O(r · n) con r = frases de reconocimiento.
+        """
+        for tipo in tipos:
             for frase in self._reconocer[tipo]:
                 if frase.coincide(texto) != "":
-                    return frase.capturar(texto).capitalize()
+                    return frase.capturar(texto)
         return ""
 
     def _cargar_archivo(self, usuario):

@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: repositorio.py
-# Descripción: clase que descarga las frases y respuestas por API.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 import json
 import os
@@ -41,9 +39,12 @@ class Cliente_API:
             respuesta = requests.get(self._url_base + archivo, timeout=10)
             respuesta.raise_for_status()
             datos = respuesta.json()
-        except (requests.exceptions.RequestException, ValueError):
+        except Exception:
+            # cualquier problema de red o de JSON: nunca se cierra el programa
             print("No se pudo descargar " + archivo + ", uso la copia local.")
             return None
+
+        # guardar la copia local para poder funcionar sin internet
         try:
             os.makedirs("datos", exist_ok=True)
             with open("datos/" + archivo, "w", encoding="utf-8") as copia:
@@ -67,10 +68,11 @@ class Cliente_API:
         for archivo in archivos:
             contenido = self.descargar_json(archivo)
             if contenido is None:
+                # sin internet: intentar leer la copia guardada en datos/
                 try:
                     with open("datos/" + archivo, "r", encoding="utf-8") as guardado:
                         contenido = json.load(guardado)
-                except (OSError, ValueError):
+                except Exception:
                     contenido = None
             datos[archivo] = contenido
         return datos

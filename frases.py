@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: frases.py
-# Descripción: clases para modelar las frases clave y sus grupos.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 import random
 import unicodedata
@@ -16,10 +14,25 @@ def normalizar(texto):
     Eficiencia: O(n) donde n es la cantidad de caracteres del texto.
     """
     texto = texto.lower()
+
+    # 1) quitar los acentos: se separan de la letra y después se borran
     texto = unicodedata.normalize("NFKD", texto)
-    texto = "".join(c for c in texto if not unicodedata.combining(c))
-    texto = "".join(c if (c.isalnum() or c.isspace() or c == "*") else " " for c in texto)
-    return " ".join(texto.split())
+    sin_acentos = ""
+    for letra in texto:
+        if not unicodedata.combining(letra):
+            sin_acentos = sin_acentos + letra
+
+    # 2) dejar solo letras, números, espacios y el comodín *
+    limpio = ""
+    for letra in sin_acentos:
+        if letra.isalnum() or letra.isspace() or letra == "*":
+            limpio = limpio + letra
+        else:
+            limpio = limpio + " "
+
+    # 3) juntar los espacios de más en uno solo
+    palabras = limpio.split()
+    return " ".join(palabras)
 
 
 class FraseClave:
@@ -33,7 +46,7 @@ class FraseClave:
         _texto (str): la frase normalizada, con * si tiene comodín.
         _comodin (bool): True si la frase contiene *.
 
-    Eficiencia: las dos comparaciones recorren una sola vez las palabras
+    Eficiencia: las comparaciones recorren una sola vez las palabras
     del texto, es decir O(n).
     """
 
@@ -52,7 +65,8 @@ class FraseClave:
         """
         texto = normalizar(texto)
         if self._comodin:
-            if self.capturar(texto) == "":
+            palabra = self.capturar(texto)
+            if palabra == "":
                 return ""
             return self._texto
         if self._texto in texto:
@@ -81,11 +95,20 @@ class FraseClave:
         texto = normalizar(texto)
         if not self._comodin:
             return ""
+
+        # la parte fija es lo que está antes del *
         parte_fija = self._texto.split("*")[0].split()
         palabras = texto.split()
-        for i in range(len(palabras) - len(parte_fija)):
-            if palabras[i:i + len(parte_fija)] == parte_fija:
-                return palabras[i + len(parte_fija)]
+
+        # recorrer el texto buscando la parte fija palabra por palabra
+        for inicio in range(len(palabras) - len(parte_fija)):
+            encontrada = True
+            for posicion in range(len(parte_fija)):
+                if palabras[inicio + posicion] != parte_fija[posicion]:
+                    encontrada = False
+            # solo cuenta si además hay una palabra después de la parte fija
+            if encontrada:
+                return palabras[inicio + len(parte_fija)]
         return ""
 
 
@@ -127,11 +150,12 @@ class GrupoFrases:
         """
         for frase in self._frases:
             coincidente = frase.coincide(texto)
-            if coincidente != "":
-                palabra = frase.capturar(texto)
-                if palabra != "":
-                    return palabra
+            if coincidente == "":
+                continue
+            palabra = frase.capturar(texto)
+            if palabra == "":
                 return coincidente
+            return palabra
         return ""
 
     def coincide_completa(self, texto):

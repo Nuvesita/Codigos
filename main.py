@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: main.py
-# Descripción: arranque del programa, menú y validación de la entrada.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 from eliza import Eliza
 
@@ -11,19 +9,24 @@ def main():
 
     Si el usuario escribe algo que no es 1 ni 2, se lo hace saber y
     vuelve a pedir la opción.
+
+    Eficiencia: O(1); solo imprime y lee lo que escriba el usuario.
     """
     eliza = Eliza()
     while True:
         print("1. Iniciar conversación")
         print("2. Salir")
         opcion = input("Escribe una opción: ").strip()
+
+        # validar la opción antes de usarla
         if opcion == "1":
             eliza.ejecutar()
             return
-        if opcion == "2":
+        elif opcion == "2":
             print("Hasta pronto.")
             return
-        print("Opción inválida: escribe 1 o 2.")
+        else:
+            print("Opción inválida: escribe 1 o 2.")
 
 
 if __name__ == "__main__":

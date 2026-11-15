@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: archivos.py
-# Descripción: clase que guarda y carga la información en archivos .txt.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 from personas import Persona, Usuario
 
@@ -36,19 +34,30 @@ class Persistencia:
                 texto = contenido.read()
         except OSError:
             return []
+
         personas = []
-        for bloque in texto.split("---"):
+        bloques = texto.split("---")
+        for bloque in bloques:
+            # cada bloque es un conjunto de líneas "Campo: valor"
             campos = {}
-            for linea in bloque.split("\n"):
+            lineas = bloque.split("\n")
+            for linea in lineas:
                 if ":" in linea:
-                    clave, valor = linea.split(":", 1)
-                    campos[clave.strip()] = valor.strip()
+                    partes = linea.split(":", 1)
+                    clave = partes[0].strip()
+                    valor = partes[1].strip()
+                    campos[clave] = valor
+
             if "Usuario" in campos:
-                personas.append(Persona(campos["Usuario"], campos.get("Origen", ""), ""))
+                origen = ""
+                if "Origen" in campos:
+                    origen = campos["Origen"]
+                personas.append(Persona(campos["Usuario"], origen, ""))
             elif "Persona" in campos:
-                personas.append(Persona(campos.get("Persona", ""),
-                                        campos.get("Origen", ""),
-                                        campos.get("Relacion", "")))
+                nombre = campos.get("Persona", "")
+                origen = campos.get("Origen", "")
+                relacion = campos.get("Relacion", "")
+                personas.append(Persona(nombre, origen, relacion))
         return personas
 
     def guardar(self, archivo, personas):
@@ -63,12 +72,14 @@ class Persistencia:
         for persona in personas:
             if isinstance(persona, Usuario):
                 bloque = "Usuario: " + persona.nombre()
-                bloque += "\nOrigen: " + persona.lugar_origen()
+                bloque = bloque + "\nOrigen: " + persona.lugar_origen()
             else:
                 bloque = "Persona: " + persona.nombre()
-                bloque += "\nOrigen: " + persona.lugar_origen()
-                bloque += "\nRelacion: " + persona.relacion()
+                bloque = bloque + "\nOrigen: " + persona.lugar_origen()
+                bloque = bloque + "\nRelacion: " + persona.relacion()
             bloques.append(bloque)
+
+        # los bloques se unen con la línea "---"
         texto = "\n---\n".join(bloques)
         with open(archivo, "w", encoding="utf-8") as contenido:
             contenido.write(texto + "\n")

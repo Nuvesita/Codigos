@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: personas.py
-# Descripción: clases para modelar a las personas y la base de conocimiento.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 
 class Persona:
@@ -62,7 +60,11 @@ class Persona:
 
         Eficiencia: O(1).
         """
-        return self._nombre != "" and self._lugar_origen != ""
+        if self._nombre == "":
+            return False
+        if self._lugar_origen == "":
+            return False
+        return True
 
     def dato_faltante(self):
         """Devuelve "nombre", "origen" o cadena vacía según lo que falte.
@@ -74,9 +76,10 @@ class Persona:
         """
         if self._nombre == "":
             return "nombre"
-        if self._lugar_origen == "":
+        elif self._lugar_origen == "":
             return "origen"
-        return ""
+        else:
+            return ""
 
 
 class Usuario(Persona):
@@ -162,6 +165,8 @@ class BaseConocimiento:
             self._personas.append(persona)
             self._ultima = persona
             return
+
+        # solo se llenan los campos que están vacíos
         if existente.nombre() == "" and persona.nombre() != "":
             existente.poner_nombre(persona.nombre())
         if existente.lugar_origen() == "" and persona.lugar_origen() != "":
@@ -175,9 +180,13 @@ class BaseConocimiento:
         Eficiencia: O(n) con n = personas guardadas.
         """
         for guardada in self._personas:
-            if persona.nombre() != "" and guardada.nombre().lower() == persona.nombre().lower():
-                return guardada
-            if persona.relacion() != "" and guardada.relacion().lower() == persona.relacion().lower():
+            mismo_nombre = False
+            mismo_parentesco = False
+            if persona.nombre() != "":
+                mismo_nombre = guardada.nombre().lower() == persona.nombre().lower()
+            if persona.relacion() != "":
+                mismo_parentesco = guardada.relacion().lower() == persona.relacion().lower()
+            if mismo_nombre or mismo_parentesco:
                 return guardada
         return None
 

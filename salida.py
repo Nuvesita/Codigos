@@ -1,7 +1,5 @@
-# Proyecto: El Efecto ELIZA - Algoritmos y Programación (BPTSP05) 2627-1
-# Integrantes: [NOMBRE 1] y [NOMBRE 2]
-# Archivo: salida.py
-# Descripción: clase que construye las respuestas de Eliza.
+# Proyecto: El Efecto ELIZA - Algoritmos y Programación
+# Integrantes: Veronica Alexandra Linares Castillo y Luciano Yanes Martínez
 
 
 class GeneradorRespuestas:
@@ -37,6 +35,8 @@ class GeneradorRespuestas:
         """
         if grupo.prioridad() == 3 and base.ultima() is not None:
             return self._mensaje_persona(base.ultima())
+
+        # cada grupo de salida tiene la misma prioridad que su grupo de entrada
         for salida in self._grupos:
             if salida.prioridad() == grupo.prioridad():
                 return salida.elegir_respuesta()
@@ -46,26 +46,31 @@ class GeneradorRespuestas:
         """Devuelve la pregunta que sigue cuando ninguna frase coincidió.
 
         Pide primero el nombre del usuario, después su origen, luego los
-        datos de las personas incompletas y, si está todo completo, usa
-        el mensaje conversacional.
+        datos de las personas incompletas y, si está todo completo, usa el
+        mensaje conversacional.
 
         Eficiencia: O(n + g) con n = personas y g = grupos de salida.
         """
         usuario = base.personas()[0]
+        incompletas = base.incompletas()
+
         if usuario.dato_faltante() == "nombre":
             return self._preguntas["nombre usuario"].elegir_respuesta()
-        if usuario.dato_faltante() == "origen":
+        elif usuario.dato_faltante() == "origen":
             return self._preguntas["origen usuario"].elegir_respuesta()
-        incompletas = base.incompletas()
-        if len(incompletas) > 0:
+        elif len(incompletas) > 0:
+            # a una persona primero se le pide el nombre y después el origen
             persona = incompletas[0]
             if persona.dato_faltante() == "nombre":
                 return self._mensaje_nombre(persona)
-            return self._preguntas["origen persona"].elegir_respuesta()
-        for salida in self._grupos:
-            if salida.prioridad() == 0:
-                return salida.mensaje_conversacional()
-        return ""
+            else:
+                return self._preguntas["origen persona"].elegir_respuesta()
+        else:
+            # todo completo: mensaje conversacional (prioridad 0)
+            for salida in self._grupos:
+                if salida.prioridad() == 0:
+                    return salida.mensaje_conversacional()
+            return ""
 
     def _mensaje_persona(self, persona):
         """Arma el mensaje del Freudiano con los datos de la persona.
@@ -77,10 +82,13 @@ class GeneradorRespuestas:
         """
         if persona.nombre() == "":
             return self._mensaje_nombre(persona)
+
         relacion = self._sin_determinantes(persona.relacion())
-        if relacion.endswith("o") or relacion in ("padre", "papá"):
+        es_hombre = relacion.endswith("o") or relacion == "padre" or relacion == "papá"
+        if es_hombre:
             return "¿Tu " + relacion + " llamado " + persona.nombre() + "?"
-        return "¿Tu " + relacion + " llamada " + persona.nombre() + "?"
+        else:
+            return "¿Tu " + relacion + " llamada " + persona.nombre() + "?"
 
     def _mensaje_nombre(self, persona):
         """Arma la pregunta por el nombre de la persona.
@@ -95,7 +103,8 @@ class GeneradorRespuestas:
 
         Eficiencia: O(1).
         """
-        for prefijo in ("mi ", "la ", "el "):
+        prefijos = ["mi ", "la ", "el "]
+        for prefijo in prefijos:
             if relacion.startswith(prefijo):
-                return relacion[3:]
+                return relacion[len(prefijo):]
         return relacion

@@ -59,6 +59,18 @@ class FraseClave:
             return self._texto
         return ""
 
+    def es_igual(self, texto):
+        """Devuelve True si el texto completo es la frase, sin comodín.
+
+        Sirve para que "no sé" prefiera el grupo Ayuda antes que el
+        grupo Positivismo, que tendría la palabra "no" dentro del texto.
+
+        Eficiencia: O(n) donde n es la cantidad de caracteres del texto.
+        """
+        if self._comodin:
+            return False
+        return self._texto == normalizar(texto)
+
     def capturar(self, texto):
         """Devuelve la palabra que sigue al *, o cadena vacía si no tiene
         comodín o si el usuario no escribió nada después.
@@ -98,6 +110,13 @@ class GrupoFrases:
         self._prioridad = prioridad
         self._frases = frases
 
+    def prioridad(self):
+        """Devuelve la prioridad del grupo (1 es la más importante).
+
+        Eficiencia: O(1).
+        """
+        return self._prioridad
+
     def buscar(self, texto):
         """Devuelve la primera frase que coincide con el texto.
 
@@ -114,6 +133,19 @@ class GrupoFrases:
                     return palabra
                 return coincidente
         return ""
+
+    def coincide_completa(self, texto):
+        """Devuelve True si el texto completo es alguna frase del grupo.
+
+        Antes de mirar las prioridades, Eliza busca si el usuario escribió
+        exactamente una frase conocida: esa coincidencia gana siempre.
+
+        Eficiencia: O(f · n) donde f es la cantidad de frases del grupo.
+        """
+        for frase in self._frases:
+            if frase.es_igual(texto):
+                return True
+        return False
 
     def elegir_respuesta(self):
         """Elige un mensaje al azar de la lista.
@@ -140,14 +172,16 @@ class GrupoEntrada(GrupoFrases):
     def __init__(self, nombre, prioridad, frases, accion):
         """Carga el grupo con sus frases y guarda la acción que representa."""
         super().__init__(nombre, prioridad, frases)
-        self._accion = accion
+        self._accion = normalizar(accion)
 
     def es_despedida(self):
         """Devuelve True si el grupo es el de despedida.
 
+        La acción viene del JSON del profesor: "Fin del programa".
+
         Eficiencia: O(1); solo compara dos cadenas.
         """
-        return self._accion == "despedida"
+        return self._accion == "fin del programa"
 
 
 class GrupoSalida(GrupoFrases):

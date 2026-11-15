@@ -18,7 +18,6 @@ def normalizar(texto):
     texto = texto.lower()
     texto = unicodedata.normalize("NFKD", texto)
     texto = "".join(c for c in texto if not unicodedata.combining(c))
-    # dejo letras, números, espacios y el comodín; todo lo demás vuelve espacio
     texto = "".join(c if (c.isalnum() or c.isspace() or c == "*") else " " for c in texto)
     return " ".join(texto.split())
 
@@ -72,8 +71,6 @@ class FraseClave:
             return ""
         parte_fija = self._texto.split("*")[0].split()
         palabras = texto.split()
-        # comparo ventanas de palabras para no coincidir a mitad de otra
-        # palabra, por ejemplo "de" dentro de "donde"
         for i in range(len(palabras) - len(parte_fija)):
             if palabras[i:i + len(parte_fija)] == parte_fija:
                 return palabras[i + len(parte_fija)]

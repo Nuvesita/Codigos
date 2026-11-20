@@ -59,7 +59,7 @@ class GeneradorRespuestas:
         if persona.nombre() == "":
             return self._mensaje_nombre(persona)
 
-        relacion = self._sin_determinantes(persona.relacion())
+        relacion = self._sin_pref(persona.relacion())
 
         es_hombre = relacion.endswith("o") or relacion in ("padre", "papa", "papá")
 
@@ -72,7 +72,7 @@ class GeneradorRespuestas:
     def _mensaje_nombre(self, persona):
         """Arma la pregunta por el nombre de la persona referenciada"""
 
-        relacion = self._sin_determinantes(persona.relacion())
+        relacion = self._sin_pref(persona.relacion())
 
         return "Háblame de tu " + relacion + ", ¿cómo era su nombre?"
 

@@ -5,14 +5,7 @@ from eliza import Eliza
 
 
 def main():
-    """Arranca la conversación con ELIZA hasta que el usuario se despida.
-
-    Si no se pueden cargar las frases del repositorio, se avisa y el
-    programa termina sin errores.
-
-    Eficiencia: O(1); solo crea el objeto y cede el control a la
-    conversación.
-    """
+    """Arranca la conversación hasta que el usuario se despida"""
     eliza = Eliza()
     eliza.ejecutar()
 

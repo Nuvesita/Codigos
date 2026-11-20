@@ -5,24 +5,11 @@ from personas import Persona, Usuario
 
 
 class Persistencia:
-    """Lee y escribe el archivo de texto con las personas de la sesión.
-
-    El formato son bloques separados por "---", cada uno con las líneas
-    "Usuario:" o "Persona:", "Origen:" y, para las demás personas,
-    "Relacion:".
-
-    Eficiencia: cargar y guardar recorren la lista de personas una vez,
-    es decir O(n) con n = personas guardadas.
-    """
+    """Lee y escribe el archivo de texto con las personas de la sesión, en bloques separados"""
 
     def cargar(self, archivo):
-        """Devuelve las personas guardadas en el archivo.
+        # Devuelve las personas guardadas en el archivo
 
-        Si el archivo no existe o no se puede leer devuelve una lista
-        vacía, que es el caso normal en la primera conversación.
-
-        Eficiencia: O(n) con n = personas guardadas en el archivo.
-        """
         try:
             with open(archivo, "r", encoding="utf-8") as contenido:
                 texto = contenido.read()
@@ -59,12 +46,8 @@ class Persistencia:
         return personas
 
     def guardar(self, archivo, personas):
-        """Guarda la lista de personas en el archivo en formato de bloques.
-
-        Si el archivo ya existía se sobrescribe con la información nueva.
-
-        Eficiencia: O(n) con n = personas guardadas.
-        """
+        # Guarda la lista de personas en el archivo en formato de bloques
+        
         bloques = []
 
         for persona in personas:

@@ -6,7 +6,7 @@ import unicodedata
 
 
 def normalizar(texto):
-    # Devuelve el texto en minúsculas y sin acentos
+    """Devuelve el texto en minúsculas y sin acentos"""
 
     texto = texto.lower()
 
@@ -24,7 +24,7 @@ def normalizar(texto):
 
 
 def limpiar_palabra(palabra):
-    # Devuelve la palabra en minúsculas y sin signos ni acentos
+    """Devuelve la palabra en minúsculas y sin signos ni acentos"""
 
     palabra = normalizar(palabra)
     limpia = ""
@@ -38,7 +38,7 @@ def limpiar_palabra(palabra):
 
 
 def a_palabras(texto):
-    # Devuelve el texto como lista de palabras limpias
+    """Devuelve el texto como lista de palabras limpias"""
 
     palabras = []
     actual = ""
@@ -67,7 +67,7 @@ class FraseClave:
         self._comodin = "*" in self._texto
 
     def coincide(self, texto):
-        # Devuelve la frase si aparece en el texto, o cadena vacía si no
+        """Devuelve la frase si aparece en el texto, o cadena vacía si no"""
 
         texto = normalizar(texto)
 
@@ -92,7 +92,7 @@ class FraseClave:
         return ""
 
     def capturar(self, texto):
-        # Devuelve la palabra que sigue
+        """Devuelve la palabra que sigue al comodín, o cadena vacía si no hay nada que tomar"""
 
         texto = normalizar(texto)
 
@@ -125,16 +125,19 @@ class GrupoFrases:
     """Grupo de frases que comparten nombre, prioridad y su respuesta"""
 
     def __init__(self, nombre, prioridad, frases):
-        # Guarda el nombre, la prioridad y la lista de frases
+        """Guarda el nombre, la prioridad y la lista de frases"""
 
         self._nombre = nombre
         self._prioridad = prioridad
         self._frases = frases
 
     def prioridad(self):
+        """Devuelve la prioridad del grupo"""
+
         return self._prioridad
 
     def buscar(self, texto):
+        """Devuelve lo que se capturó del texto con alguna frase, o cadena vacía si no coincidió ninguna"""
 
         for frase in self._frases:
             coincidente = frase.coincide(texto)
@@ -152,7 +155,7 @@ class GrupoFrases:
         return ""
 
     def elegir_respuesta(self):
-        # Elige un mensaje al azar de la lista
+        """Elige un mensaje al azar de la lista"""
 
         return random.choice(self._frases)
 
@@ -166,6 +169,8 @@ class GrupoEntrada(GrupoFrases):
         self._accion = normalizar(accion)
 
     def es_despedida(self):
+        """Indica si este grupo es la despedida, la que termina el programa"""
+
         return self._accion == "fin del programa"
 
 
@@ -173,4 +178,6 @@ class GrupoSalida(GrupoFrases):
     """Grupo de mensajes con los que responde al usuario y se elige uno al azar"""
 
     def mensaje_conversacional(self):
+        """Elige un mensaje conversacional para cuando no hay nada más que preguntar"""
+
         return self.elegir_respuesta()

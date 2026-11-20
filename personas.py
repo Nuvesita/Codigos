@@ -6,48 +6,50 @@ class Persona:
     """Persona referenciada con nombre, lugar de origen y relación"""
 
     def __init__(self, nombre="", lugar_origen="", relacion=""):
-        # Crea una persona con los datos que se conozcan desde el inicio
+        """Crea una persona con los datos que se conozcan desde el inicio"""
 
         self._nombre = nombre
         self._lugar_origen = lugar_origen
         self._relacion = relacion
 
     def nombre(self):
-        # Devuelve el nombre, o cadena vacía si todavía no se conoce
+        """Devuelve el nombre, o cadena vacía si todavía no se conoce"""
 
         return self._nombre
 
     def lugar_origen(self):
-        # Devuelve el lugar de origen
+        """Devuelve el lugar de origen"""
 
         return self._lugar_origen
 
     def relacion(self):
-        # Devuelve la relación con el usuario
+        """Devuelve la relación con el usuario"""
 
         return self._relacion
 
     def poner_nombre(self, nombre):
-        # Guarda el nombre de la persona
+        """Guarda el nombre de la persona"""
 
         self._nombre = nombre
 
     def poner_origen(self, origen):
-        # Guarda el lugar de origen de la persona
+        """Guarda el lugar de origen de la persona"""
 
         self._lugar_origen = origen
 
     def esta_completa(self):
+        """Indica si ya se conocen el nombre y el origen"""
 
         if self._nombre == "":
             return False
-        
+
         if self._lugar_origen == "":
             return False
-        
+
         return True
 
     def dato_faltante(self):
+        """Devuelve qué dato falta por conocer, o cadena vacía si está completa"""
 
         if self._nombre == "":
             return "nombre"
@@ -63,7 +65,7 @@ class Usuario(Persona):
     """El usuario de la conversación, carga y guarda sus datos en el archivo"""
 
     def __init__(self, persistencia, nombre="", lugar_origen=""):
-        # Crea el usuario con su persistencia y los datos que se conozcan
+        """Crea al usuario con su persistencia y los datos que se conozcan"""
 
         super().__init__("", "", "usuario")
 
@@ -77,7 +79,7 @@ class Usuario(Persona):
             self.poner_origen(lugar_origen)
 
     def poner_nombre(self, nombre):
-        # Guarda el nombre y arma el nombre del archivo con él
+        """Guarda el nombre y arma el nombre del archivo con él"""
 
         super().poner_nombre(nombre)
 
@@ -85,12 +87,12 @@ class Usuario(Persona):
             self._archivo = nombre + ".txt"
 
     def cargar(self):
-        # Devuelve las personas del archivo de una conversación anterior
+        """Devuelve las personas del archivo de una conversación anterior"""
 
         return self._persistencia.cargar(self._archivo)
 
     def guardar(self, personas):
-        # Guarda todas las personas en el archivo del usuario
+        """Guarda todas las personas en el archivo del usuario"""
 
         self._persistencia.guardar(self._archivo, personas)
 
@@ -104,7 +106,7 @@ class BaseConocimiento:
         self._ultima = None
 
     def agregar(self, persona, solo_vacios=False):
-        # Agrega una persona o actualiza la que ya existía
+        """Agrega una persona o actualiza la que ya existía"""
 
         existente = self._buscar(persona)
 
@@ -135,7 +137,7 @@ class BaseConocimiento:
         self._ultima = existente
 
     def _buscar(self, persona):
-        # Devuelve la persona guardada con el mismo nombre o relación
+        """Devuelve la persona guardada con el mismo nombre o relación"""
 
         for guardada in self._personas:
 
@@ -154,7 +156,7 @@ class BaseConocimiento:
         return None
 
     def incompletas(self):
-        # Devuelve las personas a las que les falta algún dato
+        """Devuelve las personas a las que les falta algún dato"""
 
         resultado = []
 
@@ -166,7 +168,11 @@ class BaseConocimiento:
         return resultado
 
     def personas(self):
+        """Devuelve la lista de personas registradas"""
+
         return self._personas
 
     def ultima(self):
+        """Devuelve la última persona en registrarse o actualizarse"""
+
         return self._ultima

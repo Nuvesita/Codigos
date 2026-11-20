@@ -8,7 +8,7 @@ class Persistencia:
     """Lee y escribe el archivo de texto con las personas de la sesión, en bloques separados"""
 
     def cargar(self, archivo):
-        # Devuelve las personas guardadas en el archivo
+        """Devuelve las personas guardadas en el archivo, o lista vacía si no existe"""
 
         try:
             with open(archivo, "r", encoding="utf-8") as contenido:
@@ -46,8 +46,8 @@ class Persistencia:
         return personas
 
     def guardar(self, archivo, personas):
-        # Guarda la lista de personas en el archivo en formato de bloques
-        
+        """Guarda la lista de personas en el archivo en formato de bloques"""
+
         bloques = []
 
         for persona in personas:

@@ -22,7 +22,7 @@ class Eliza:
         self._esperando = False
 
     def iniciar(self):
-        # Descarga las frases y arma los grupos
+        """Descarga las frases de la API y arma los grupos de la conversación"""
 
         url = "https://raw.githubusercontent.com/FernandoSapient/BPTSP05_2627-1/main/"
         self._api = Cliente_API(url)
@@ -45,7 +45,7 @@ class Eliza:
         return True
 
     def ejecutar(self):
-        # Corre la conversación hasta la despedida
+        """Corre la conversación hasta la despedida"""
 
         if not self.iniciar():
             return
@@ -75,7 +75,7 @@ class Eliza:
             print("Eliza: " + respuesta)
 
     def procesar(self, texto):
-        # Devuelve la respuesta de Eliza para el texto del usuario
+        """Devuelve la respuesta de Eliza para el texto del usuario, o None si se despide"""
 
         normalizado = normalizar(texto)
 
@@ -106,7 +106,7 @@ class Eliza:
         return respuesta
 
     def _buscar_grupo(self, texto):
-        # Devuelve el grupo que coincide con el texto
+        """Devuelve el primer grupo que coincide con el texto, ya van ordenados por prioridad"""
 
         for grupo in self._grupos:
 
@@ -116,6 +116,8 @@ class Eliza:
         return None
 
     def _revisar_prioridades_bajas(self, texto):
+        """Revisa los grupos de prioridad 3 o menos y registra a las personas mencionadas"""
+
         encontro_algo = False
 
         for grupo in self._grupos:
@@ -136,7 +138,7 @@ class Eliza:
         return encontro_algo
 
     def _armar_grupos(self, datos):
-        # Crea los grupos de entrada, de salida, de preguntas y las frases de reconocimiento
+        """Crea los grupos de entrada, de salida, de preguntas y las frases de reconocimiento"""
 
         self._grupos = []
 
@@ -165,6 +167,9 @@ class Eliza:
                     self._grupos[i] = self._grupos[j]
                     self._grupos[j] = temporal
 
+        # quedan ordenados por prioridad de menor a mayor; como son pocos grupos
+        # el ordenamiento por seleccion no se nota
+
         salidas = []
 
         for nombre, info in datos["salida.json"].items():
@@ -188,12 +193,12 @@ class Eliza:
         }
 
     def _grupo_pregunta(self, info):
-        # Arma un grupo de salida con las frases de una pregunta
+        """Arma un grupo de salida con las frases de una pregunta"""
 
         return GrupoSalida("Preguntar", 0, info["Frases clave"])
 
     def _frases_de(self, info):
-        # Arma la lista de frases clave de un grupo
+        """Arma la lista de frases clave de un grupo"""
 
         frases = []
 
@@ -203,6 +208,7 @@ class Eliza:
         return frases
 
     def _falta_algo(self):
+        """Indica si a alguna persona registrada le falta algún dato"""
 
         for persona in self._base.personas():
 
@@ -212,7 +218,7 @@ class Eliza:
         return False
 
     def _recopilar(self, texto, mensaje_especial):
-        # Interpreta el texto como respuesta a una pregunta pendiente
+        """Interpreta el texto como respuesta a una pregunta pendiente"""
 
         if not self._esperando:
             return
@@ -260,7 +266,7 @@ class Eliza:
         self._esperando = False
 
     def _buscar_nombre(self, texto, tipo):
-        # Devuelve el nombre reconocido en el texto o la primera palabra
+        """Devuelve el nombre reconocido en el texto o la primera palabra"""
 
         nombre = self._buscar_dato(texto, [tipo])
 
@@ -275,7 +281,7 @@ class Eliza:
         return nombre.capitalize()
 
     def _buscar_origen(self, texto):
-        # Devuelve el origen reconocido en el texto o cadena vacía
+        """Devuelve el origen reconocido en el texto o cadena vacía"""
 
         origen = self._buscar_dato(texto, ["lugar", "gentilicio"])
 
@@ -285,6 +291,7 @@ class Eliza:
         return origen.capitalize()
 
     def _buscar_dato(self, texto, tipos):
+        """Devuelve lo que capturen las frases de reconocimiento de los tipos pedidos"""
 
         for tipo in tipos:
 
@@ -296,13 +303,13 @@ class Eliza:
         return ""
 
     def _cargar_archivo(self, usuario):
-        # Carga la conversación anterior del usuario si el archivo existe
+        """Carga la conversación anterior del usuario si el archivo existe"""
 
         for persona in usuario.cargar():
             self._base.agregar(persona, solo_vacios=True)
 
     def _guardar(self):
-        # Guarda todas las personas en el archivo del usuario
+        """Guarda todas las personas en el archivo del usuario"""
         
         personas = self._base.personas()
         personas[0].guardar(personas)

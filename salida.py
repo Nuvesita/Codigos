@@ -3,14 +3,14 @@
 
 
 class GeneradorRespuestas:
-    """Elige los mensajes que Eliza imprime en pantalla según el grupo y lo que falta."""
+    """Elige los mensajes que imprime en pantalla según el grupo y lo que falta"""
 
     def __init__(self, grupos, preguntas):
         self._grupos = grupos
         self._preguntas = preguntas
 
     def responder(self, grupo, base):
-        # Devuelve la respuesta para el grupo de entrada que coincidió
+        """Devuelve la respuesta para el grupo de entrada que coincidió"""
 
         if (grupo.prioridad() == 3) and (base.ultima() is not None):
             return self._mensaje_persona(base.ultima())
@@ -23,7 +23,7 @@ class GeneradorRespuestas:
         return ""
 
     def siguiente_pregunta(self, base):
-        # Devuelve la pregunta que sigue cuando ninguna frase coincidió
+        """Devuelve la pregunta que sigue cuando ninguna frase coincidió"""
 
         usuario = base.personas()[0]
         incompletas = base.incompletas()
@@ -54,7 +54,7 @@ class GeneradorRespuestas:
             return ""
 
     def _mensaje_persona(self, persona):
-        # Arma el mensaje con los datos que se conocen de la persona
+        """Arma el mensaje con los datos que se conocen de la persona"""
 
         if persona.nombre() == "":
             return self._mensaje_nombre(persona)
@@ -70,13 +70,14 @@ class GeneradorRespuestas:
             return "¿Tu " + relacion + " llamada " + persona.nombre() + "?"
 
     def _mensaje_nombre(self, persona):
-        # Arma la pregunta por el nombre de la persona referenciada
+        """Arma la pregunta por el nombre de la persona referenciada"""
 
         relacion = self._sin_determinantes(persona.relacion())
 
         return "Háblame de tu " + relacion + ", ¿cómo era su nombre?"
 
-    def _sin_determinantes(self, relacion):
+    def _sin_pref(self, relacion):
+        """Quita los prefijos de la relación para que suene natural"""
 
         prefijos = ["mi ", "la ", "el "]
 

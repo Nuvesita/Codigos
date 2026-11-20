@@ -6,33 +6,40 @@ import unicodedata
 
 
 def normalizar(texto):
-    """Devuelve el texto en minúsculas, sin acentos, signos ni espacios de más.
+    """Devuelve el texto en minúsculas y sin acentos.
 
     Las frases se guardan así para compararlas igual que el usuario va a
-    escribir: en minúsculas y sin acentos.
+    escribir: en minúsculas y sin acentos. Los signos no se quitan
+    porque la búsqueda de frases es por subcadena: "¿Cómo estás?"
+    contiene "estás".
 
     Eficiencia: O(n) donde n es la cantidad de caracteres del texto.
     """
     texto = texto.lower()
 
-    # 1) quitar los acentos: se separan de la letra y después se borran
+    # quitar los acentos: se separan de la letra y después se borran
     texto = unicodedata.normalize("NFKD", texto)
     sin_acentos = ""
     for letra in texto:
         if not unicodedata.combining(letra):
             sin_acentos = sin_acentos + letra
+    return sin_acentos
 
-    # 2) dejar solo letras, números, espacios y el comodín *
-    limpio = ""
-    for letra in sin_acentos:
-        if letra.isalnum() or letra.isspace() or letra == "*":
-            limpio = limpio + letra
-        else:
-            limpio = limpio + " "
 
-    # 3) juntar los espacios de más en uno solo
-    palabras = limpio.split()
-    return " ".join(palabras)
+def limpiar_palabra(palabra):
+    """Devuelve la palabra en minúsculas y sin signos ni acentos.
+
+    Se usa al capturar lo que escribió el usuario para que "Juan?" o
+    "¿es" se tomen como "juan" y "es".
+
+    Eficiencia: O(n) donde n es la cantidad de caracteres de la palabra.
+    """
+    palabra = normalizar(palabra)
+    limpia = ""
+    for letra in palabra:
+        if letra.isalnum() or letra == " ":
+            limpia = limpia + letra
+    return limpia.strip()
 
 
 class FraseClave:
@@ -51,7 +58,10 @@ class FraseClave:
     """
 
     def __init__(self, texto):
-        """Guarda la frase en minúsculas y sin acentos."""
+        """Guarda la frase en minúsculas y sin acentos.
+
+        Eficiencia: O(n) con n = caracteres de la frase.
+        """
         self._texto = normalizar(texto)
         self._comodin = "*" in self._texto
 
@@ -73,21 +83,12 @@ class FraseClave:
             return self._texto
         return ""
 
-    def es_igual(self, texto):
-        """Devuelve True si el texto completo es la frase, sin comodín.
-
-        Sirve para que "no sé" prefiera el grupo Ayuda antes que el
-        grupo Positivismo, que tendría la palabra "no" dentro del texto.
-
-        Eficiencia: O(n) donde n es la cantidad de caracteres del texto.
-        """
-        if self._comodin:
-            return False
-        return self._texto == normalizar(texto)
-
     def capturar(self, texto):
         """Devuelve la palabra que sigue al *, o cadena vacía si no tiene
         comodín o si el usuario no escribió nada después.
+
+        La palabra se limpia de signos y acentos: de "¿Me llamo Juan?"
+        se guarda "juan".
 
         Eficiencia: O(n) donde n es la cantidad de palabras del texto; se
         compara palabra por palabra hasta encontrar la parte fija.
@@ -104,11 +105,13 @@ class FraseClave:
         for inicio in range(len(palabras) - len(parte_fija)):
             encontrada = True
             for posicion in range(len(parte_fija)):
-                if palabras[inicio + posicion] != parte_fija[posicion]:
+                if limpiar_palabra(palabras[inicio + posicion]) != parte_fija[posicion]:
                     encontrada = False
             # solo cuenta si además hay una palabra después de la parte fija
             if encontrada:
-                return palabras[inicio + len(parte_fija)]
+                palabra = limpiar_palabra(palabras[inicio + len(parte_fija)])
+                if palabra != "":
+                    return palabra
         return ""
 
 
@@ -128,7 +131,10 @@ class GrupoFrases:
     """
 
     def __init__(self, nombre, prioridad, frases):
-        """Guarda el nombre, la prioridad y la lista de frases."""
+        """Guarda el nombre, la prioridad y la lista de frases.
+
+        Eficiencia: O(1); solo guarda las tres referencias.
+        """
         self._nombre = nombre
         self._prioridad = prioridad
         self._frases = frases
@@ -158,19 +164,6 @@ class GrupoFrases:
             return palabra
         return ""
 
-    def coincide_completa(self, texto):
-        """Devuelve True si el texto completo es alguna frase del grupo.
-
-        Antes de mirar las prioridades, Eliza busca si el usuario escribió
-        exactamente una frase conocida: esa coincidencia gana siempre.
-
-        Eficiencia: O(f · n) donde f es la cantidad de frases del grupo.
-        """
-        for frase in self._frases:
-            if frase.es_igual(texto):
-                return True
-        return False
-
     def elegir_respuesta(self):
         """Elige un mensaje al azar de la lista.
 
@@ -194,7 +187,10 @@ class GrupoEntrada(GrupoFrases):
     """
 
     def __init__(self, nombre, prioridad, frases, accion):
-        """Carga el grupo con sus frases y guarda la acción que representa."""
+        """Carga el grupo con sus frases y guarda la acción que representa.
+
+        Eficiencia: O(n) con n = caracteres de la acción, por normalizar.
+        """
         super().__init__(nombre, prioridad, frases)
         self._accion = normalizar(accion)
 

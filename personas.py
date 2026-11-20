@@ -15,7 +15,10 @@ class Persona:
     """
 
     def __init__(self, nombre="", lugar_origen="", relacion=""):
-        """Crea una persona con los datos que se conozcan desde el inicio."""
+        """Crea una persona con los datos que se conozcan desde el inicio.
+
+        Eficiencia: O(1); solo asigna los tres campos.
+        """
         self._nombre = nombre
         self._lugar_origen = lugar_origen
         self._relacion = relacion
@@ -97,7 +100,10 @@ class Usuario(Persona):
     """
 
     def __init__(self, persistencia, nombre="", lugar_origen=""):
-        """Crea el usuario con su persistencia y los datos que se conozcan."""
+        """Crea el usuario con su persistencia y los datos que se conozcan.
+
+        Eficiencia: O(1); solo arma el nombre del archivo.
+        """
         super().__init__("", "", "usuario")
         self._persistencia = persistencia
         self._archivo = "usuario.txt"
@@ -147,16 +153,22 @@ class BaseConocimiento:
     """
 
     def __init__(self):
-        """Crea la base vacía."""
+        """Crea la base vacía.
+
+        Eficiencia: O(1); solo crea la lista y deja la última persona
+        en None.
+        """
         self._personas = []
         self._ultima = None
 
-    def agregar(self, persona):
-        """Agrega una persona o completa la que ya existía.
+    def agregar(self, persona, solo_vacios=False):
+        """Agrega una persona o actualiza la que ya existía.
 
         Se considera la misma persona a la que coincida en nombre o en
-        relación. A la existente solo se le llenan los campos vacíos:
-        lo que ya se sabe en la conversación no se pierde.
+        relación. Por defecto lo más reciente manda: los datos nuevos
+        reemplazan los que ya estaban. Cuando solo_vacios es True (los
+        datos que vienen del archivo, que son más viejos), solo se llenan
+        los campos vacíos y no se pisa lo de la conversación actual.
 
         Eficiencia: O(n) con n = personas guardadas.
         """
@@ -166,11 +178,18 @@ class BaseConocimiento:
             self._ultima = persona
             return
 
-        # solo se llenan los campos que están vacíos
-        if existente.nombre() == "" and persona.nombre() != "":
-            existente.poner_nombre(persona.nombre())
-        if existente.lugar_origen() == "" and persona.lugar_origen() != "":
-            existente.poner_origen(persona.lugar_origen())
+        if solo_vacios:
+            # solo se llenan los campos que están vacíos
+            if existente.nombre() == "" and persona.nombre() != "":
+                existente.poner_nombre(persona.nombre())
+            if existente.lugar_origen() == "" and persona.lugar_origen() != "":
+                existente.poner_origen(persona.lugar_origen())
+        else:
+            # lo más reciente tiene prioridad sobre lo anterior
+            if persona.nombre() != "":
+                existente.poner_nombre(persona.nombre())
+            if persona.lugar_origen() != "":
+                existente.poner_origen(persona.lugar_origen())
         self._ultima = existente
 
     def _buscar(self, persona):

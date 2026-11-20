@@ -28,7 +28,10 @@ class Eliza:
     """
 
     def __init__(self):
-        """Crea a Eliza vacía; todo se carga en iniciar()."""
+        """Crea a Eliza vacía; todo se carga en iniciar().
+
+        Eficiencia: O(1); solo deja las referencias en None.
+        """
         self._api = None
         self._generador = None
         self._persistencia = Persistencia()
@@ -40,7 +43,7 @@ class Eliza:
     def iniciar(self):
         """Descarga las frases y arma los grupos.
 
-        Devuelve False si no hay datos (sin internet y sin copia local).
+        Devuelve False si no se pudieron descargar los JSON de la API.
 
         Eficiencia: cuatro llamadas a la red más recorrer los JSON, O(t)
         donde t es el total de frases.
@@ -49,11 +52,11 @@ class Eliza:
         self._api = Cliente_API(url)
         datos = self._api.cargar_todo()
 
-        # si falta algún JSON y no hay copia local no se puede conversar
+        # si falta algún JSON no se puede conversar
         nombres = ["entrada.json", "salida.json", "personas.json", "lugares.json"]
         for nombre in nombres:
             if datos[nombre] is None:
-                print("No se pudieron cargar las frases: no hay internet ni copia local.")
+                print("No se pudieron cargar las frases de la API.")
                 return False
 
         self._armar_grupos(datos)
@@ -86,10 +89,10 @@ class Eliza:
 
         Primero se revisan siempre las prioridades 1, 2 y 3 (la 3 detecta
         personas); después, si se estaba esperando un dato, el texto se
-        toma como respuesta. Luego se busca la frase clave: gana la que sea
-        igual a todo el texto y, si no hay, la prioridad menor. Devuelve
-        None cuando el grupo detectado es de despedida: en ese caso guarda
-        el archivo e imprime el adiós.
+        toma como respuesta. Luego se busca la frase clave recorriendo
+        los grupos de la prioridad 1 a la 12: gana la primera que
+        coincida. Devuelve None cuando el grupo detectado es de
+        despedida: en ese caso guarda el archivo e imprime el adiós.
 
         Eficiencia: O(g · f · n) con g = 12 grupos, f = frases por grupo
         y n = palabras del texto.
@@ -125,15 +128,13 @@ class Eliza:
     def _buscar_grupo(self, texto):
         """Devuelve el grupo que coincide con el texto, o None.
 
-        Busca primero una frase que sea igual a todo el texto ("no sé"
-        va al grupo Ayuda y no al Positivismo, que solo tiene la palabra
-        "no"). Si no hay coincidencia exacta, gana la prioridad menor.
+        Los grupos ya están ordenados por prioridad, así que se revisan
+        de la prioridad 1 a la 12 y gana la primera frase clave que
+        coincida: si hay una frase de prioridad 1, no se revisan las de
+        prioridad 2.
 
         Eficiencia: O(g · f · n) con g = 12 grupos y f = frases.
         """
-        for grupo in self._grupos:
-            if grupo.coincide_completa(texto):
-                return grupo
         for grupo in self._grupos:
             if grupo.buscar(texto) != "":
                 return grupo
@@ -336,10 +337,13 @@ class Eliza:
     def _cargar_archivo(self, usuario):
         """Carga la conversación anterior del usuario si el archivo existe.
 
+        Los datos del archivo son más viejos que los de la conversación
+        actual, así que solo se usan para llenar lo que falta.
+
         Eficiencia: O(n) con n = personas en el archivo.
         """
         for persona in usuario.cargar():
-            self._base.agregar(persona)
+            self._base.agregar(persona, solo_vacios=True)
 
     def _guardar(self):
         """Guarda todas las personas en el archivo del usuario.

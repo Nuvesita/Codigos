@@ -281,13 +281,18 @@ class Eliza:
         return nombre.capitalize()
 
     def _buscar_origen(self, texto):
-        """Devuelve el origen reconocido en el texto o cadena vacía"""
+        """Devuelve el origen reconocido en el texto o la primera palabra"""
 
         origen = self._buscar_dato(texto, ["lugar", "gentilicio"])
 
         if origen == "":
-            return ""
-        
+            palabras = texto.split()
+
+            if len(palabras) == 0:
+                return ""
+
+            origen = palabras[0]
+
         return origen.capitalize()
 
     def _buscar_dato(self, texto, tipos):
